@@ -202,9 +202,9 @@ func (d *Database) GetStatsHistory(owner, repo string, limit int) ([]ReleaseStat
 	result := make([]ReleaseStats, 0, len(fetchDates))
 	for _, fetchedAt := range fetchDates {
 		stats := &ReleaseStats{
-			Owner:    owner,
-			Repo:     repo,
-			Releases: make([]Release, 0),
+			Owner:     owner,
+			Repo:      repo,
+			Releases:  make([]Release, 0),
 			FetchedAt: fetchedAt,
 		}
 
@@ -269,9 +269,9 @@ func (d *Database) GetStatsBetween(owner, repo string, start, end time.Time) ([]
 	result := make([]ReleaseStats, 0, len(fetchDates))
 	for _, fetchedAt := range fetchDates {
 		stats := &ReleaseStats{
-			Owner:    owner,
-			Repo:     repo,
-			Releases: make([]Release, 0),
+			Owner:     owner,
+			Repo:      repo,
+			Releases:  make([]Release, 0),
 			FetchedAt: fetchedAt,
 		}
 

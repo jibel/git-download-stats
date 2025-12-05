@@ -27,20 +27,18 @@ func NewRootCmd() *cobra.Command {
 }
 
 func newFetchCmd() *cobra.Command {
-	var ghOwner string
-	var ghRepo string
 	var ghToken string
 	var detailedOutput bool
 	var store bool
 	var dbPath string
 
 	cmd := &cobra.Command{
-		Use:   "fetch",
+		Use:   "fetch <owner> <repo>",
 		Short: "Fetch GitHub release download statistics",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if ghOwner == "" || ghRepo == "" {
-				return fmt.Errorf("owner and repo flags are required")
-			}
+			ghOwner := args[0]
+			ghRepo := args[1]
 
 			stats, err := internal.FetchReleaseStats(cmd.Context(), ghOwner, ghRepo, ghToken)
 			if err != nil {
@@ -51,8 +49,6 @@ func newFetchCmd() *cobra.Command {
 				log.Printf("No releases found for %s/%s\n", ghOwner, ghRepo)
 				return nil
 			}
-
-			internal.DisplayStats(stats, detailedOutput)
 
 			// Store in database if requested
 			if store {
@@ -76,8 +72,6 @@ func newFetchCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&ghOwner, "owner", "o", "", "GitHub repository owner (required)")
-	cmd.Flags().StringVarP(&ghRepo, "repo", "r", "", "GitHub repository name (required)")
 	cmd.Flags().StringVarP(&ghToken, "token", "t", os.Getenv("GITHUB_TOKEN"), "GitHub API token")
 	cmd.Flags().BoolVarP(&detailedOutput, "detailed", "d", false, "Show detailed output with asset names")
 	cmd.Flags().BoolVarP(&store, "store", "s", false, "Store statistics in database")
@@ -154,7 +148,7 @@ func newHistoryCmd() *cobra.Command {
 				return nil
 			}
 
-			fmt.Printf("\n📊 Statistics History for %s/%s (last %d fetches)\n\n", owner, repo, len(allStats))
+			fmt.Printf("\nStatistics History for %s/%s (last %d fetches)\n\n", owner, repo, len(allStats))
 
 			for i, stats := range allStats {
 				fmt.Printf("[%d] Fetched at: %s | Total Releases: %d | Total Downloads: %d\n",
@@ -223,7 +217,7 @@ func newCompareCmd() *cobra.Command {
 			oldest := allStats[len(allStats)-1]
 			newest := allStats[0]
 
-			fmt.Printf("\n📈 Download Statistics Comparison for %s/%s\n", owner, repo)
+			fmt.Printf("\nDownload Statistics Comparison for %s/%s\n", owner, repo)
 			fmt.Printf("Period: Last %d days\n", days)
 			fmt.Printf("Oldest: %s | Newest: %s\n\n", oldest.FetchedAt.Format("2006-01-02"), newest.FetchedAt.Format("2006-01-02"))
 
