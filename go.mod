@@ -6,6 +6,7 @@ toolchain go1.25.3
 
 require (
 	github.com/google/go-github/v56 v56.0.0
+	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/spf13/cobra v1.10.2
 )
 

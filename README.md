@@ -1,19 +1,22 @@
 # GitHub Download Statistics
 
-A Go program that fetches and displays download statistics for release artifacts from GitHub projects.
+A Go program that fetches, displays, and stores GitHub release download statistics in an SQLite database with full history tracking.
 
 ## Features
 
-- Fetch download statistics for all releases of a GitHub project
-- Display detailed information about release artifacts
-- Support for GitHub API authentication (higher rate limits)
-- Show total downloads across all releases
+- 📊 Fetch download statistics for all releases of a GitHub project
+- 💾 Store statistics in SQLite database with timestamps for historical analysis
+- 📦 Display detailed information about release artifacts
+- 🔐 Support for GitHub API authentication (higher rate limits)
+- 📈 Track download trends over time
+- 🔍 Query and compare statistics across different time periods
+- 📑 Multiple commands for different use cases
 
 ## Installation
 
 ### Prerequisites
 
-- Go 1.25 or later
+- Go 1.21 or later
 - (Optional) GitHub personal access token for authenticated requests
 
 ### Build
@@ -29,97 +32,226 @@ go mod download
 go build -o git-download-stats
 ```
 
-## Usage
+## Commands
 
-### Basic usage
-
-```bash
-./git-download-stats -owner <owner> -repo <repo>
-```
-
-### With GitHub token (for higher rate limits)
+### Fetch Command
+Fetch GitHub release statistics and optionally store them in a database.
 
 ```bash
-export GITHUB_TOKEN="your_github_token_here"
-./git-download-stats -owner <owner> -repo <repo>
+./git-download-stats fetch -o <owner> -r <repo> [OPTIONS]
 ```
 
-Or pass directly:
+**Options:**
+- `-o, --owner` (required): GitHub repository owner
+- `-r, --repo` (required): GitHub repository name
+- `-t, --token`: GitHub API token (defaults to `GITHUB_TOKEN` env var)
+- `-d, --detailed`: Show detailed output with asset names
+- `-s, --store`: Store statistics in SQLite database
+- `--db`: Custom database path (default: `github-stats.db`)
+
+**Examples:**
+```bash
+# Fetch and display stats
+./git-download-stats fetch -o cli -r cli
+
+# Fetch with detailed output
+./git-download-stats fetch -o cli -r cli -d
+
+# Fetch and store in database
+./git-download-stats fetch -o cli -r cli -s
+
+# Fetch from custom database location
+./git-download-stats fetch -o cli -r cli -s --db ./data/stats.db
+```
+
+### Show Command
+Display the latest stored statistics for a repository.
 
 ```bash
-./git-download-stats -owner <owner> -repo <repo> -token "your_github_token_here"
+./git-download-stats show <owner> <repo> [--db <path>]
 ```
 
-### Detailed view
+**Examples:**
+```bash
+# Show latest stats for GitHub CLI
+./git-download-stats show cli cli
+
+# Show from custom database
+./git-download-stats show cli cli --db ./data/stats.db
+```
+
+### History Command
+Show historical snapshots of statistics over time.
 
 ```bash
-./git-download-stats -owner <owner> -repo <repo> -detailed
+./git-download-stats history <owner> <repo> [--limit <n>] [--db <path>]
 ```
 
-## Examples
+**Options:**
+- `--limit`: Number of historical snapshots to show (default: 10)
+- `--db`: Custom database path
 
-### Get download stats for GitHub CLI
+**Examples:**
+```bash
+# Show last 10 fetches
+./git-download-stats history cli cli
+
+# Show last 5 fetches
+./git-download-stats history cli cli --limit 5
+```
+
+### Compare Command
+Compare statistics between oldest and newest records within a time period.
 
 ```bash
-./git-download-stats -owner cli -repo cli
+./git-download-stats compare <owner> <repo> [--days <n>] [--db <path>]
 ```
 
-### Get detailed stats for GitHub CLI
+**Options:**
+- `--days`: Number of days to look back (default: 30)
+- `--db`: Custom database path
+
+**Examples:**
+```bash
+# Compare stats over last 30 days
+./git-download-stats compare cli cli
+
+# Compare over last 90 days
+./git-download-stats compare cli cli --days 90
+```
+
+## Database Schema
+
+The SQLite database stores statistics in two tables:
+
+**stats table:**
+- `id`: Primary key
+- `owner`: Repository owner
+- `repo`: Repository name
+- `tag`: Release tag
+- `release_name`: Release name
+- `total_downloads`: Total downloads for the release
+- `fetched_at`: Timestamp when data was fetched
+- `created_at`: Release creation date
+
+**assets table:**
+- `id`: Primary key
+- `stat_id`: Foreign key to stats
+- `name`: Asset filename
+- `download_count`: Number of downloads
+- `size`: Asset file size in bytes
+- `content_type`: MIME type
+
+## Usage Examples
+
+### Set up automated statistics collection
 
 ```bash
-./git-download-stats -owner cli -repo cli -detailed
+# Fetch and store stats once
+./git-download-stats fetch -o hashicorp -r terraform -s
+
+# Add to cron to run daily
+0 0 * * * /path/to/git-download-stats fetch -o hashicorp -r terraform -s
 ```
 
-### Using with make
+### Track download trends
 
 ```bash
-make run ARGS="-owner cli -repo cli -detailed"
+# View download history over last month
+./git-download-stats history hashicorp terraform --limit 20
+
+# Compare stats from different time periods
+./git-download-stats compare hashicorp terraform --days 90
 ```
 
-## Output
+### Monitor multiple projects
 
-The program displays:
-- Release name and tag
-- Number of assets per release
-- Total downloads per release
-- Creation date
+```bash
+# Fetch stats for multiple projects
+./git-download-stats fetch -o cli -r cli -s
+./git-download-stats fetch -o hashicorp -r terraform -s
+./git-download-stats fetch -o golang -r go -s
 
-With the `-detailed` flag, it also shows:
-- Individual asset names
-- Download count per asset
-
-## Example Output
-
+# Check the stored statistics
+./git-download-stats show cli cli
+./git-download-stats show hashicorp terraform
+./git-download-stats show golang go
 ```
-Download Statistics for canonical/ubuntu-pro-for-wsl
-Total Releases: 5 | Total Downloads: 3959
-Last Updated: 2025-12-05 09:34:47 CET
-
-RELEASE     TAG       ASSETS  DOWNLOADS  CREATED AT
----         ---       ---     ---        ---
-1.0.1.0     1.0.1     2       2796       2025-12-01
-0.9999.8.0  0.9999b8  2       156        2025-11-25
-0.9999.7.0  0.9999b7  2       223        2025-11-17
-0.9999.6.0  0.9999b6  2       774        2025-09-17
-0.9999.5.0  0.9999b5  2       10         2025-09-17
-
-✅ Statistics compiled successfully
-```
-
-## Options
-
-- `-owner` (required): GitHub repository owner
-- `-repo` (required): GitHub repository name
-- `-token` (optional): GitHub API personal access token (defaults to `GITHUB_TOKEN` environment variable)
-- `-detailed` (optional): Show detailed information including asset names
 
 ## API Rate Limits
 
 - **Unauthenticated requests**: 60 requests per hour
 - **Authenticated requests**: 5,000 requests per hour
 
-For better performance with large repositories, set a GitHub personal access token.
+For better performance with large repositories, set a GitHub personal access token:
 
+```bash
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+## Creating a GitHub Personal Access Token
+
+1. Go to https://github.com/settings/tokens
+2. Click "Generate new token"
+3. Select `public_repo` scope (or `repo` for private repositories)
+4. Copy the token and set it as environment variable:
+
+```bash
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+## Output Examples
+
+### Fetch Output
+```
+Download Statistics for cli/cli
+Total Releases: 182 | Total Downloads: 68698450
+Last Updated: 2025-12-05 10:53:51 CET
+
+RELEASE            TAG      ASSETS  DOWNLOADS  CREATED AT
+---                ---      ---     ---        ---
+GitHub CLI 2.83.1  v2.83.1  22      571716     2025-11-13
+GitHub CLI 2.83.0  v2.83.0  22      350999     2025-11-04
+GitHub CLI 2.82.1  v2.82.1  22      516555     2025-10-22
+
+✅ Statistics compiled successfully
+
+✓ Statistics stored in github-stats.db
+```
+
+### History Output
+```
+📊 Statistics History for cli/cli (last 2 fetches)
+
+[1] Fetched at: 2025-12-05 10:53:51 +0100 | Total Releases: 182 | Total Downloads: 68698450
+    Top 3 releases:
+      - GitHub CLI 2.83.1 (v2.83.1): 571716 downloads
+      - GitHub CLI 2.3.0 (v2.3.0): 5085174 downloads
+      - GitHub CLI 2.40.1 (v2.40.1): 3615787 downloads
+
+[2] Fetched at: 2025-12-05 10:52:58 +0100 | Total Releases: 182 | Total Downloads: 68698421
+    Top 3 releases:
+      - GitHub CLI 2.83.1 (v2.83.1): 571716 downloads
+      - GitHub CLI 2.3.0 (v2.3.0): 5085174 downloads
+      - GitHub CLI 2.40.1 (v2.40.1): 3615787 downloads
+```
+
+### Compare Output
+```
+📈 Download Statistics Comparison for cli/cli
+Period: Last 30 days
+Oldest: 2025-11-05 | Newest: 2025-12-05
+
+Total Downloads:
+  Oldest: 67856234
+  Newest: 68698450
+  Growth: +842216 (+1.24%)
+
+Top 5 releases by growth:
+  1. GitHub CLI 2.83.1 (v2.83.1): +100000 (+21.27%)
+  2. GitHub CLI 2.83.0 (v2.83.0): +45000 (+14.68%)
+  3. GitHub CLI 2.82.1 (v2.82.1): +38000 (+7.86%)
+```
 
 ## Development
 
@@ -140,6 +272,13 @@ make clean
 ```bash
 make deps
 ```
+
+## Architecture
+
+- **cmd/cmd.go**: Command-line interface using Cobra framework
+- **internal/github.go**: GitHub API client for fetching release data
+- **internal/database.go**: SQLite database operations and queries
+- **internal/records.go**: Display formatting utilities
 
 ## License
 
