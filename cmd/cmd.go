@@ -28,7 +28,6 @@ func NewRootCmd() *cobra.Command {
 
 func newFetchCmd() *cobra.Command {
 	var ghToken string
-	var detailedOutput bool
 	var store bool
 	var dbPath string
 
@@ -66,6 +65,13 @@ func newFetchCmd() *cobra.Command {
 					dbFile = "github-stats.db"
 				}
 				log.Printf("\n✓ Statistics stored in %s\n", dbFile)
+				return nil
+			}
+
+			showCmd := newShowCmd()
+			showCmd.SetArgs([]string{ghOwner, ghRepo})
+			if err := showCmd.RunE(cmd, []string{ghOwner, ghRepo}); err != nil {
+				return err
 			}
 
 			return nil
@@ -73,7 +79,6 @@ func newFetchCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&ghToken, "token", "t", os.Getenv("GITHUB_TOKEN"), "GitHub API token")
-	cmd.Flags().BoolVarP(&detailedOutput, "detailed", "d", false, "Show detailed output with asset names")
 	cmd.Flags().BoolVarP(&store, "store", "s", false, "Store statistics in database")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: github-stats.db)")
 
