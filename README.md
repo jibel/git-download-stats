@@ -38,12 +38,13 @@ go build -o git-download-stats
 Fetch GitHub release statistics and optionally store them in a database.
 
 ```bash
-./git-download-stats fetch -o <owner> -r <repo> [OPTIONS]
+./git-download-stats fetch <owner> <repo> [OPTIONS]
 ```
 
+- `owner` (required): GitHub repository owner
+- `repo` (required): GitHub repository name
+
 **Options:**
-- `-o, --owner` (required): GitHub repository owner
-- `-r, --repo` (required): GitHub repository name
 - `-t, --token`: GitHub API token (defaults to `GITHUB_TOKEN` env var)
 - `-d, --detailed`: Show detailed output with asset names
 - `-s, --store`: Store statistics in SQLite database
@@ -176,28 +177,6 @@ The SQLite database stores statistics in two tables:
 ./git-download-stats show cli cli
 ./git-download-stats show hashicorp terraform
 ./git-download-stats show golang go
-```
-
-## API Rate Limits
-
-- **Unauthenticated requests**: 60 requests per hour
-- **Authenticated requests**: 5,000 requests per hour
-
-For better performance with large repositories, set a GitHub personal access token:
-
-```bash
-export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-```
-
-## Creating a GitHub Personal Access Token
-
-1. Go to https://github.com/settings/tokens
-2. Click "Generate new token"
-3. Select `public_repo` scope (or `repo` for private repositories)
-4. Copy the token and set it as environment variable:
-
-```bash
-export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
 ## Output Examples
